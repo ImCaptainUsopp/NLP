@@ -8,5 +8,3 @@ propn,verb,particle,verb,noun,conj,pron,verb,det,noun,adj
 propn,adv,verb,particle,verb
 propn,conj,propn,modal,verb,noun,adv
 pron,verb,prep,det,noun,conj,verb,noun,prep,det,noun,pron,verb
-
-

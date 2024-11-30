@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <iterator>
+#include <utility>
 #include <sstream>
 #include <vector>
 #include <string>
@@ -62,15 +63,37 @@ int main() {
    /*
     *   Building of the emission matrix.
     */
-    unordered_map<string, vector<string>> sentences_map;
+    unordered_map<string, vector<string>> emission_matrix;
     for(int i = 0; i < sentences.size(); i++) {
           for(int j = 0; j < sentences[i].size(); j++) {
-                sentences_map[sentences[i][j]].push_back(pos[i][j]);
+                emission_matrix[sentences[i][j]].push_back(pos[i][j]);
           }
     }
 
-    cout << "Sentence map of : " << sentences_map.size() << " unique words." << endl;
-    cout << "Fish --> verb : " << get_emission_probability(sentences_map["fish"],"verb") << ", noun :"<< get_emission_probability(sentences_map["fish"],"noun") <<  endl;
+    cout << "Sentence map of : " << emission_matrix.size() << " unique words." << endl;
+    cout << "Fish --> verb : " << get_emission_probability(emission_matrix["fish"],"verb") << ", noun :"<< get_emission_probability(emission_matrix["fish"],"noun") <<  endl;
+
+    /*
+     *  Building of the transition matrix.
+     */
+    unordered_map<string,unordered_map<string,int>> translation_matrix;
+    for(int i = 0; i < pos.size(); i++) {
+        for(int j = 0; j < pos[i].size(); j++) {
+            string first_word_pos = "";
+            string second_word_pos = "";
+            if(j == 0)
+                first_word_pos = "start";
+            if(j == pos[i].size() - 1)
+                break;
+            if(j == pos[i].size() - 2)
+                second_word_pos = "end";
+            if(first_word_pos == "")
+                first_word_pos = pos[i][j];
+            if(second_word_pos == "")
+                second_word_pos = pos[i][j+1];
+            translation_matrix[pos[i][j]] =  // i don't know how to make a dictionnary with two keys 
+        }
+    }
 
     return 0;
 }
