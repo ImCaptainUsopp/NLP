@@ -4,7 +4,25 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <unordered_map>
+
 using namespace std;
+
+
+double get_emission_probability(vector<string> maps,string type) {
+    double probability = 0.0;
+    int occ = 0;
+    for (const auto& element : maps) {
+        if (element == type) {
+            occ++;
+        }
+    }
+    probability = (double) occ / (double) maps.size();
+    return probability;
+}
+
+
+
 
 int main() {
     ifstream data("../data.txt");
@@ -31,8 +49,6 @@ int main() {
             vector<string> words_pos;
             stringstream ss(line);
             string word_pos;
-
-
             while (getline(ss, word_pos, ',')) {
                 words_pos.push_back(word_pos);
             }
@@ -43,7 +59,18 @@ int main() {
     cout << "Number of sentences processed: " << sentences.size() << endl;
     cout << "Number of pos processed: " << pos.size() << endl;
 
+   /*
+    *   Building of the emission matrix.
+    */
+    unordered_map<string, vector<string>> sentences_map;
+    for(int i = 0; i < sentences.size(); i++) {
+          for(int j = 0; j < sentences[i].size(); j++) {
+                sentences_map[sentences[i][j]].push_back(pos[i][j]);
+          }
+    }
 
+    cout << "Sentence map of : " << sentences_map.size() << " unique words." << endl;
+    cout << "Fish --> verb : " << get_emission_probability(sentences_map["fish"],"verb") << ", noun :"<< get_emission_probability(sentences_map["fish"],"noun") <<  endl;
 
     return 0;
 }

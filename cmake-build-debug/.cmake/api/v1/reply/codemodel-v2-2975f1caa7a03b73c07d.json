@@ -49,8 +49,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "C:/Users/vlgau/Desktop/Vilnius/parralel computing/NLP/cmake-build-debug",
-		"source" : "C:/Users/vlgau/Desktop/Vilnius/parralel computing/NLP"
+		"build" : "C:/Users/vlgau/Desktop/Vilnius/parralel computing/NLP/NLP/cmake-build-debug",
+		"source" : "C:/Users/vlgau/Desktop/Vilnius/parralel computing/NLP/NLP"
 	},
 	"version" : 
 	{
