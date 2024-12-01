@@ -1,3 +1,0 @@
-C:/Users/vlgau/Desktop/Vilnius/parralel computing/NLP/NLP/cmake-build-debug/CMakeFiles/NLP.dir
-C:/Users/vlgau/Desktop/Vilnius/parralel computing/NLP/NLP/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/vlgau/Desktop/Vilnius/parralel computing/NLP/NLP/cmake-build-debug/CMakeFiles/rebuild_cache.dir
