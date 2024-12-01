@@ -9,6 +9,16 @@
 
 using namespace std;
 
+struct hash_pair {
+    template <class T1, class T2>
+    size_t operator()(const pair<T1, T2>& p) const
+    {
+        size_t hash1 = hash<T1>{}(p.first);
+        size_t hash2 = hash<T2>{}(p.second);
+        // Combine the two hash values
+        return hash1 ^ (hash2 + 0x9e3779b9 + (hash1 << 6) + (hash1 >> 2));
+    }
+};
 
 double get_emission_probability(vector<string> maps,string type) {
     double probability = 0.0;
@@ -24,10 +34,9 @@ double get_emission_probability(vector<string> maps,string type) {
 
 
 
-
 int main() {
-    ifstream data("../data.txt");
-    ifstream posdata("../pos.txt");
+    ifstream data("./data.txt");
+    ifstream posdata("./pos.txt");
     vector<vector<string>> sentences;
     vector<vector<string>> pos;
     string line;
@@ -76,23 +85,42 @@ int main() {
     /*
      *  Building of the transition matrix.
      */
-    unordered_map<string,unordered_map<string,int>> translation_matrix;
+    unordered_map<pair<string, string>, int, hash_pair> translation_matrix;
+    unordered_map<string, int> sum_of_first_word_pos;
+
     for(int i = 0; i < pos.size(); i++) {
         for(int j = 0; j < pos[i].size(); j++) {
             string first_word_pos = "";
             string second_word_pos = "";
+
             if(j == 0)
                 first_word_pos = "start";
             if(j == pos[i].size() - 1)
                 break;
             if(j == pos[i].size() - 2)
                 second_word_pos = "end";
+
             if(first_word_pos == "")
                 first_word_pos = pos[i][j];
             if(second_word_pos == "")
                 second_word_pos = pos[i][j+1];
-            translation_matrix[pos[i][j]] =  // i don't know how to make a dictionnary with two keys 
+
+            pair<string, string> key = make_pair(first_word_pos, second_word_pos);
+            
+            translation_matrix[key] += 1;
+            sum_of_first_word_pos[key.first] += 1;
         }
+    }
+
+    unordered_map<pair<string, string>, double, hash_pair> linear_trans_prob_matrix;
+
+    for (auto key_value : translation_matrix) {
+        pair<string, string> key = key_value.first;
+        int value = key_value.second;
+
+        linear_trans_prob_matrix[key] = 1.0 * value / sum_of_first_word_pos[key.first];
+
+        printf("[%8s, %8s] => %.3f \n", key.first.c_str(), key.second.c_str(), linear_trans_prob_matrix[key]);
     }
 
     return 0;
