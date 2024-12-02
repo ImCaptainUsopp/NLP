@@ -165,7 +165,7 @@ int main() {
     /*
      *  Execution of Viterbi
      */
-    vector<string> test = {"tom", "likes","fish"};
+    vector<string> test = {"tom", "likes","to","fish"};
     test = viterbi(emission_matrix,linear_trans_prob_matrix,test);
     cout << "result : " << endl;
     for (const auto& word : test) {

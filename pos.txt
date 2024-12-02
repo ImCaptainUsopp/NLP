@@ -8,3 +8,64 @@ propn,verb,particle,verb,noun,conj,pron,verb,det,noun,adj
 propn,adv,verb,particle,verb
 propn,conj,propn,modal,verb,noun,adv
 pron,verb,prep,det,noun,conj,verb,noun,prep,det,noun,pron,verb
+propn verb particle verb
+adv noun propn verb particle det noun particle verb
+pron verb det noun noun conj det noun prep noun
+propn verb particle verb det adj noun
+adv propn verb det adj noun
+prep noun propn verb det noun pron verb
+propn verb particle verb noun conj pron verb det noun adj
+propn adv verb particle verb
+propn conj propn modal verb noun adv
+pron verb prep det noun conj verb noun prep det noun pron verb
+propn verb
+propn verb
+propn verb det noun
+propn verb det noun
+propn verb det noun prep det noun
+propn verb det noun prep det noun
+propn conj propn verb
+propn verb particle verb
+propn verb particle verb
+propn conj propn verb noun
+propn verb adj
+propn verb adj
+propn verb noun
+propn verb noun
+propn verb noun prep det noun
+propn verb noun prep det noun
+propn conj propn verb adv
+propn verb noun
+propn verb noun
+propn conj propn verb adv
+propn verb adv
+propn verb adv
+propn verb adj noun
+propn verb adj noun
+propn verb noun prep noun
+propn verb noun prep noun
+propn conj propn verb prep noun
+propn verb noun
+propn verb noun
+propn conj propn verb adj noun
+propn verb adv
+propn verb adv
+propn verb adj noun
+propn verb adj noun
+propn verb noun prep noun
+propn verb noun prep noun
+propn conj propn verb adv noun
+propn verb particle verb adj
+propn verb particle verb adj
+propn conj propn verb det noun
+propn verb prep propn
+propn verb prep propn
+propn conj propn verb det noun
+propn verb det adj noun
+propn verb det adj noun
+propn verb det noun prep det noun
+propn verb det noun prep det noun
+propn verb prep det noun
+propn verb prep det noun
+propn conj propn verb particle verb
+
