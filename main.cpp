@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <fstream>
 #include <iterator>
@@ -6,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <algorithm>
 
 using namespace std;
 
@@ -32,11 +34,48 @@ double get_emission_probability(vector<string> maps,string type) {
     return probability;
 }
 
+vector<string> viterbi(unordered_map<string, vector<string>> emission_matrix,
+                       unordered_map<pair<string, string>, double, hash_pair> linear_trans_prob_matrix,
+                       vector<string> sentence) {
+    if (sentence.empty()) return {};
+
+    vector<string> posSentence = {"start"};
+
+    for (const auto& word : sentence) {
+        unordered_map<string, double> temp;
+        for (const auto& state : emission_matrix[word]) {
+            double max_prob = -INFINITY;
+            string best_prev_state;
+
+            for (const auto& prev_state : posSentence) {
+                double trans_prob = linear_trans_prob_matrix[{prev_state, state}];
+                double emission_prob = get_emission_probability(emission_matrix[word], state);
+                double score = log(trans_prob) + log(emission_prob);
+
+                if (score > max_prob) {
+                    max_prob = score;
+                    best_prev_state = prev_state;
+                }
+            }
+
+            temp[state] = max_prob;
+        }
+
+        posSentence.push_back(max_element(temp.begin(), temp.end(),
+                                          [](const pair<string, double>& a, const pair<string, double>& b) {
+                                              return a.second < b.second;
+                                          })->first);
+    }
+
+    posSentence.push_back("end");
+    return posSentence;
+}
+
 
 
 int main() {
-    ifstream data("./data.txt");
-    ifstream posdata("./pos.txt");
+    ifstream data("../data.txt");
+    ifstream posdata("../pos.txt");
     vector<vector<string>> sentences;
     vector<vector<string>> pos;
     string line;
@@ -123,5 +162,14 @@ int main() {
         printf("[%8s, %8s] => %.3f \n", key.first.c_str(), key.second.c_str(), linear_trans_prob_matrix[key]);
     }
 
+    /*
+     *  Execution of Viterbi
+     */
+    vector<string> test = {"tom", "likes","fish"};
+    test = viterbi(emission_matrix,linear_trans_prob_matrix,test);
+    cout << "result : " << endl;
+    for (const auto& word : test) {
+        cout << word << " ";
+    }
     return 0;
 }
