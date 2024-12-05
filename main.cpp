@@ -101,7 +101,6 @@ int main() {
             while (getline(ss, word_pos, ',')) {
                 words_pos.push_back(word_pos);
             }
-
             pos.push_back(words_pos);
         }
     }
@@ -114,7 +113,10 @@ int main() {
     unordered_map<string, vector<string>> emission_matrix;
     for(int i = 0; i < sentences.size(); i++) {
           for(int j = 0; j < sentences[i].size(); j++) {
-                emission_matrix[sentences[i][j]].push_back(pos[i][j]);
+                if(sentences[i].size() == pos[i].size())
+                    emission_matrix[sentences[i][j]].push_back(pos[i][j]);
+                else
+                    cout << "Error sentence : " << i << endl;
           }
     }
 
@@ -129,8 +131,8 @@ int main() {
 
     for(int i = 0; i < pos.size(); i++) {
         for(int j = 0; j < pos[i].size(); j++) {
-            string first_word_pos = "";
-            string second_word_pos = "";
+            string first_word_pos;
+            string second_word_pos;
 
             if(j == 0)
                 first_word_pos = "start";
@@ -139,9 +141,9 @@ int main() {
             if(j == pos[i].size() - 2)
                 second_word_pos = "end";
 
-            if(first_word_pos == "")
+            if(first_word_pos.empty())
                 first_word_pos = pos[i][j];
-            if(second_word_pos == "")
+            if(second_word_pos.empty())
                 second_word_pos = pos[i][j+1];
 
             pair<string, string> key = make_pair(first_word_pos, second_word_pos);
@@ -159,9 +161,9 @@ int main() {
 
         linear_trans_prob_matrix[key] = 1.0 * value / sum_of_first_word_pos[key.first];
 
-        printf("[%8s, %8s] => %.3f \n", key.first.c_str(), key.second.c_str(), linear_trans_prob_matrix[key]);
+        //printf("[%8s, %8s] => %.3f \n", key.first.c_str(), key.second.c_str(), linear_trans_prob_matrix[key]);
     }
-
+    cout << "Size of translation matrix : " << translation_matrix.size();
     /*
      *  Execution of Viterbi
      */
