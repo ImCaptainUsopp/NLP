@@ -28,3 +28,4 @@ propn,conj,propn,verb,prep,noun
 propn,verb,noun
 propn,verb,noun
 propn,conj,propn,verb,adj,noun
+

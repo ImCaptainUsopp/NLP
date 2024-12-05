@@ -38,7 +38,6 @@ vector<string> viterbi(unordered_map<string, vector<string>> emission_matrix,
                        unordered_map<pair<string, string>, double, hash_pair> linear_trans_prob_matrix,
                        vector<string> sentence) {
     if (sentence.empty()) return {};
-
     vector<string> posSentence = {"start"};
 
     for (const auto& word : sentence) {
@@ -122,6 +121,8 @@ int main() {
 
     cout << "Sentence map of : " << emission_matrix.size() << " unique words." << endl;
     cout << "Fish --> verb : " << get_emission_probability(emission_matrix["fish"],"verb") << ", noun :"<< get_emission_probability(emission_matrix["fish"],"noun") <<  endl;
+    cout << "tom --> verb : " << get_emission_probability(emission_matrix["tom"],"propn") << ", noun :"<< get_emission_probability(emission_matrix["tom"],"noun") <<  endl;
+    cout << "loves --> verb : " << get_emission_probability(emission_matrix["loves"],"verb") << ", noun :"<< get_emission_probability(emission_matrix["loves"],"noun") <<  endl;
 
     /*
      *  Building of the transition matrix.
@@ -147,7 +148,7 @@ int main() {
                 second_word_pos = pos[i][j+1];
 
             pair<string, string> key = make_pair(first_word_pos, second_word_pos);
-            
+
             translation_matrix[key] += 1;
             sum_of_first_word_pos[key.first] += 1;
         }
@@ -161,13 +162,13 @@ int main() {
 
         linear_trans_prob_matrix[key] = 1.0 * value / sum_of_first_word_pos[key.first];
 
-        //printf("[%8s, %8s] => %.3f \n", key.first.c_str(), key.second.c_str(), linear_trans_prob_matrix[key]);
+        printf("[%8s, %8s] => %.3f \n", key.first.c_str(), key.second.c_str(), linear_trans_prob_matrix[key]);
     }
-    cout << "Size of translation matrix : " << translation_matrix.size();
+    cout << "Size of translation matrix : " << translation_matrix.size() << endl;
     /*
      *  Execution of Viterbi
      */
-    vector<string> test = {"tom", "likes","to","fish"};
+    vector<string> test = {"tom","loves","fish"};
     test = viterbi(emission_matrix,linear_trans_prob_matrix,test);
     cout << "result : " << endl;
     for (const auto& word : test) {
