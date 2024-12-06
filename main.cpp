@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <algorithm>
+#include <omp.h>
 
 using namespace std;
 
@@ -41,6 +42,8 @@ vector<string> viterbi(unordered_map<string, Word_emission> emission_matrix,
 
 int main()
 {
+    omp_set_num_threads(8);
+
     vector<vector<string>> sentences, pos_tags;
 
     read_data_files(sentences, pos_tags);
@@ -52,7 +55,7 @@ int main()
     /*
      *  Execution of Viterbi
      */
-    vector<string> test = {"Tom", "loves", "fish"};
+    vector<string> test = {"tom", "loves", "fish"};
     vector<string> result = viterbi(emission_matrix, linear_trans_prob_matrix, test);
     cout << "result : ";
     for (const auto &word : result)
@@ -102,11 +105,11 @@ void read_data_files(vector<vector<string>> &sentences, vector<vector<string>> &
 unordered_map<string, Word_emission> build_emission_matrix(vector<vector<string>> sentences, vector<vector<string>> pos_tags) {
     unordered_map<string, Word_emission> emission_matrix;
 
-    #pragma omp parallel for schedule(dynamic, 10)
+    #pragma omp parallel for schedule(dynamic, 2)
     for (int i = 0; i < sentences.size(); i++) {
 
         if (sentences[i].size() != pos_tags[i].size()) {
-            cerr << "Words and POS mismatch on line : " << i << endl;
+            // cerr << "Words and POS mismatch on line : " << i << endl;
             continue;
         }
 
@@ -115,7 +118,9 @@ unordered_map<string, Word_emission> build_emission_matrix(vector<vector<string>
             string word = sentences[i][j];
             string pos_tag = pos_tags[i][j];
 
+            #pragma omp critical
             emission_matrix[word].total_count += 1;
+            #pragma omp critical
             emission_matrix[word].post_tag_to_count[pos_tag] += 1;
         }
     }
@@ -141,7 +146,10 @@ unordered_map<pair<string, string>, double, hash_pair> build_transition_probabil
             string second_word_pos = j == pos_tags[i].size() ? "end" : pos_tags[i][j];
 
             pair<string, string> key = make_pair(first_word_pos, second_word_pos);
+
+            #pragma omp critical
             transition_to_count[key] += 1;
+            #pragma omp critical
             sum_of_first_word_pos_tag[first_word_pos] += 1;
         }
     }
@@ -169,9 +177,9 @@ vector<string> viterbi(unordered_map<string, Word_emission> emission_matrix,
 
     for (const auto &word : sentence) 
     {
-        // if (emission_matrix[word].post_tag_to_count.size() == 0) {
-        //     continue;
-        // }
+        if (emission_matrix[word].post_tag_to_count.size() == 0) {
+            continue;
+        }
 
         unordered_map<string, double> temp;
         for (const auto &word_tag_to_count : emission_matrix[word].post_tag_to_count)
