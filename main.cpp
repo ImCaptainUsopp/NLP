@@ -11,6 +11,8 @@
 
 using namespace std;
 
+int error = 0;
+
 struct hash_pair {
     template <class T1, class T2>
     size_t operator()(const pair<T1, T2>& p) const
@@ -115,10 +117,10 @@ int main() {
                 if(sentences[i].size() == pos[i].size())
                     emission_matrix[sentences[i][j]].push_back(pos[i][j]);
                 else
-                    cout << "Error sentence : " << i << endl;
+                    error++;
           }
     }
-
+    cout << "Errors : " << error << endl;
     cout << "Sentence map of : " << emission_matrix.size() << " unique words." << endl;
     cout << "Fish --> verb : " << get_emission_probability(emission_matrix["fish"],"verb") << ", noun :"<< get_emission_probability(emission_matrix["fish"],"noun") <<  endl;
     cout << "tom --> verb : " << get_emission_probability(emission_matrix["tom"],"propn") << ", noun :"<< get_emission_probability(emission_matrix["tom"],"noun") <<  endl;
@@ -168,7 +170,10 @@ int main() {
     /*
      *  Execution of Viterbi
      */
-    vector<string> test = {"tom","loves","fish"};
+
+    vector<string> test = {"Tom","loves","fish"};
+    cout << "Processing Tom loves fish" << endl;
+
     test = viterbi(emission_matrix,linear_trans_prob_matrix,test);
     cout << "result : " << endl;
     for (const auto& word : test) {
