@@ -11,11 +11,9 @@
 
 using namespace std;
 
-int error = 0;
-
 struct hash_pair {
     template <class T1, class T2>
-    size_t operator()(const pair<T1, T2>& p) const
+    size_t operator()(const pair<T1, T2> &p) const
     {
         size_t hash1 = hash<T1>{}(p.first);
         size_t hash2 = hash<T2>{}(p.second);
@@ -24,69 +22,61 @@ struct hash_pair {
     }
 };
 
-double get_emission_probability(vector<string> maps,string type) {
-    double probability = 0.0;
-    int occ = 0;
-    for (const auto& element : maps) {
-        if (element == type) {
-            occ++;
-        }
-    }
-    probability = (double) occ / (double) maps.size();
-    return probability;
-}
+struct Word_emission {
+    long total_count = 0;
+    unordered_map<string, int> post_tag_to_count;
 
-vector<string> viterbi(unordered_map<string, vector<string>> emission_matrix,
+    double probability(string pos_tag) {
+        return 1.0 * post_tag_to_count[pos_tag] / total_count;
+    }
+};
+
+void read_data_files(vector<vector<string>> &sentences, vector<vector<string>> &pos);
+unordered_map<string, Word_emission> build_emission_matrix(vector<vector<string>> sentences, vector<vector<string>> pos_tags);
+unordered_map<pair<string, string>, double, hash_pair> build_transition_probability_matrix(vector<vector<string>> pos_tags);
+
+vector<string> viterbi(unordered_map<string, Word_emission> emission_matrix,
                        unordered_map<pair<string, string>, double, hash_pair> linear_trans_prob_matrix,
-                       vector<string> sentence) {
-    if (sentence.empty()) return {};
-    vector<string> posSentence = {"start"};
+                       vector<string> sentence);
 
-    for (const auto& word : sentence) {
-        unordered_map<string, double> temp;
-        for (const auto& state : emission_matrix[word]) {
-            double max_prob = -INFINITY;
-            string best_prev_state;
+int main()
+{
+    vector<vector<string>> sentences, pos_tags;
 
-            for (const auto& prev_state : posSentence) {
-                double trans_prob = linear_trans_prob_matrix[{prev_state, state}];
-                double emission_prob = get_emission_probability(emission_matrix[word], state);
-                double score = log(trans_prob) + log(emission_prob);
+    read_data_files(sentences, pos_tags);
 
-                if (score > max_prob) {
-                    max_prob = score;
-                    best_prev_state = prev_state;
-                }
-            }
+    auto emission_matrix = build_emission_matrix(sentences, pos_tags);
 
-            temp[state] = max_prob;
-        }
-
-        posSentence.push_back(max_element(temp.begin(), temp.end(),
-                                          [](const pair<string, double>& a, const pair<string, double>& b) {
-                                              return a.second < b.second;
-                                          })->first);
+    auto linear_trans_prob_matrix = build_transition_probability_matrix(pos_tags);
+    
+    /*
+     *  Execution of Viterbi
+     */
+    vector<string> test = {"tom", "loves", "fish"};
+    vector<string> result = viterbi(emission_matrix, linear_trans_prob_matrix, test);
+    cout << "result : ";
+    for (const auto &word : result)
+    {
+        cout << word << " ";
     }
+    cout << endl;
 
-    posSentence.push_back("end");
-    return posSentence;
+    return 0;
 }
 
 
 
-int main() {
-    ifstream data("../data.txt");
-    ifstream posdata("../pos.txt");
-    vector<vector<string>> sentences;
-    vector<vector<string>> pos;
-    string line;
+void read_data_files(vector<vector<string>> &sentences, vector<vector<string>> &pos) {
+    ifstream data("./data.txt");
+    ifstream posdata("./pos.txt");
 
     if (!data.is_open() || !posdata.is_open()) {
         cerr << "Error opening file" << endl;
-        return 1;
+        return;
     }
 
-    cout << "Processing Data .." << endl;
+    string line;
+
     while (getline(data, line)) {
         if (!line.empty()) {
             istringstream iss(line);
@@ -105,79 +95,108 @@ int main() {
             pos.push_back(words_pos);
         }
     }
-    cout << "Number of sentences processed: " << sentences.size() << endl;
-    cout << "Number of pos processed: " << pos.size() << endl;
+    cout << "Number of sentences in input data: " << sentences.size() << endl;
+    cout << "Number of pos tags  in input data: " << pos.size() << endl;
+}
 
-   /*
-    *   Building of the emission matrix.
-    */
-    unordered_map<string, vector<string>> emission_matrix;
-    for(int i = 0; i < sentences.size(); i++) {
-          for(int j = 0; j < sentences[i].size(); j++) {
-                if(sentences[i].size() == pos[i].size())
-                    emission_matrix[sentences[i][j]].push_back(pos[i][j]);
-                else
-                    error++;
-          }
-    }
-    cout << "Errors : " << error << endl;
-    cout << "Sentence map of : " << emission_matrix.size() << " unique words." << endl;
-    cout << "Fish --> verb : " << get_emission_probability(emission_matrix["fish"],"verb") << ", noun :"<< get_emission_probability(emission_matrix["fish"],"noun") <<  endl;
-    cout << "tom --> verb : " << get_emission_probability(emission_matrix["tom"],"propn") << ", noun :"<< get_emission_probability(emission_matrix["tom"],"noun") <<  endl;
-    cout << "loves --> verb : " << get_emission_probability(emission_matrix["loves"],"verb") << ", noun :"<< get_emission_probability(emission_matrix["loves"],"noun") <<  endl;
+unordered_map<string, Word_emission> build_emission_matrix(vector<vector<string>> sentences, vector<vector<string>> pos_tags) {
+    unordered_map<string, Word_emission> emission_matrix;
 
-    /*
-     *  Building of the transition matrix.
-     */
-    unordered_map<pair<string, string>, int, hash_pair> translation_matrix;
-    unordered_map<string, int> sum_of_first_word_pos;
+    #pragma omp parallel for schedule(dynamic, 10)
+    for (int i = 0; i < sentences.size(); i++) {
 
-    for (int i = 0; i < pos.size(); i++) {
-        for (int j = 0; j < pos[i].size(); j++) {
-            string first_word_pos;
-            string second_word_pos;
+        if (sentences[i].size() != pos_tags[i].size()) {
+            cerr << "Words and POS mismatch on line : " << i << endl;
+            continue;
+        }
 
+        for (int j = 0; j < sentences[i].size(); j++)
+        {
+            string word = sentences[i][j];
+            string pos_tag = pos_tags[i][j];
 
-            if (j == 0) {
-                first_word_pos = "start";
-            } else {
-                first_word_pos = pos[i][j - 1];
-            }
-            if (j == pos[i].size() ) {
-                second_word_pos = "end";
-            } else {
-                second_word_pos = pos[i][j];
-            }
-
-            pair<string, string> key = make_pair(first_word_pos, second_word_pos);
-            translation_matrix[key] += 1;
-            sum_of_first_word_pos[first_word_pos] += 1;
+            emission_matrix[word].total_count += 1;
+            emission_matrix[word].post_tag_to_count[pos_tag] += 1;
         }
     }
 
+    cout << "Input data has " << emission_matrix.size() << " unique words." << endl;
+    // cout << "fish --> verb : " << emission_matrix["fish"].probability("verb") << ", noun :" << emission_matrix["fish"].probability("noun") << endl;
+
+    return emission_matrix;
+}
+
+unordered_map<pair<string, string>, double, hash_pair> build_transition_probability_matrix(vector<vector<string>> pos_tags) {
 
     unordered_map<pair<string, string>, double, hash_pair> linear_trans_prob_matrix;
 
-    for (auto key_value : translation_matrix) {
+    unordered_map<pair<string, string>, int, hash_pair> transition_to_count;
+    unordered_map<string, int> sum_of_first_word_pos_tag;
+
+    #pragma omp parallel for schedule(dynamic, 10)
+    for (int i = 0; i < pos_tags.size(); i++) {
+        for (int j = 0; j < pos_tags[i].size(); j++) {
+
+            string first_word_pos = j == 0 ? "start" : pos_tags[i][j - 1];
+            string second_word_pos = j == pos_tags[i].size() ? "end" : pos_tags[i][j];
+
+            pair<string, string> key = make_pair(first_word_pos, second_word_pos);
+            transition_to_count[key] += 1;
+            sum_of_first_word_pos_tag[first_word_pos] += 1;
+        }
+    }
+
+    for (auto key_value : transition_to_count) {
         pair<string, string> key = key_value.first;
         int value = key_value.second;
 
-        linear_trans_prob_matrix[key] = 1.0 * value / sum_of_first_word_pos[key.first];
+        linear_trans_prob_matrix[key] = 1.0 * value / sum_of_first_word_pos_tag[key.first];
 
         printf("[%8s, %8s] => %.3f \n", key.first.c_str(), key.second.c_str(), linear_trans_prob_matrix[key]);
     }
-    cout << "Size of translation matrix : " << translation_matrix.size() << endl;
-    /*
-     *  Execution of Viterbi
-     */
+    
+    cout << "Size of translation matrix : " << transition_to_count.size() << endl;
 
-    vector<string> test = {"Tom","loves","fish"};
-    cout << "Processing Tom loves fish" << endl;
+    return linear_trans_prob_matrix;
+}
 
-    test = viterbi(emission_matrix,linear_trans_prob_matrix,test);
-    cout << "result : " << endl;
-    for (const auto& word : test) {
-        cout << word << " ";
+vector<string> viterbi(unordered_map<string, Word_emission> emission_matrix,
+                       unordered_map<pair<string, string>, double, hash_pair> linear_trans_prob_matrix,
+                       vector<string> sentence)
+{
+    if (sentence.empty()) return {};
+    vector<string> posSentence = {"start"};
+
+    for (const auto &word : sentence) 
+    {
+        unordered_map<string, double> temp;
+        for (const auto &word_tag_to_count : emission_matrix[word].post_tag_to_count)
+        {
+            string state = word_tag_to_count.first;
+            double max_prob = -INFINITY;
+
+            for (const auto &prev_state : posSentence)
+            {
+                // Next type
+                double trans_prob = linear_trans_prob_matrix[{prev_state, state}];
+                double emission_prob = emission_matrix[word].probability(state);
+                double score = log(trans_prob) + log(emission_prob);
+
+                max_prob = max(max_prob, score);
+            }
+
+            temp[state] = max_prob;
+        }
+
+        string best_pos_tag_guess = max_element(temp.begin(), temp.end(),
+                                          [](const pair<string, double> &a, const pair<string, double> &b)
+                                          {
+                                              return a.second < b.second;
+                                          })
+                                  ->first;
+        posSentence.push_back(best_pos_tag_guess);
     }
-    return 0;
+
+    posSentence.push_back("end");
+    return posSentence;
 }
