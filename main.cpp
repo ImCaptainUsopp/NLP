@@ -52,7 +52,7 @@ int main()
     /*
      *  Execution of Viterbi
      */
-    vector<string> test = {"tom", "loves", "fish"};
+    vector<string> test = {"Tom", "loves", "fish"};
     vector<string> result = viterbi(emission_matrix, linear_trans_prob_matrix, test);
     cout << "result : ";
     for (const auto &word : result)
@@ -169,6 +169,10 @@ vector<string> viterbi(unordered_map<string, Word_emission> emission_matrix,
 
     for (const auto &word : sentence) 
     {
+        // if (emission_matrix[word].post_tag_to_count.size() == 0) {
+        //     continue;
+        // }
+
         unordered_map<string, double> temp;
         for (const auto &word_tag_to_count : emission_matrix[word].post_tag_to_count)
         {
