@@ -130,29 +130,29 @@ int main() {
     unordered_map<pair<string, string>, int, hash_pair> translation_matrix;
     unordered_map<string, int> sum_of_first_word_pos;
 
-    for(int i = 0; i < pos.size(); i++) {
-        for(int j = 0; j < pos[i].size(); j++) {
+    for (int i = 0; i < pos.size(); i++) {
+        for (int j = 0; j < pos[i].size(); j++) {
             string first_word_pos;
             string second_word_pos;
 
-            if(j == 0)
-                first_word_pos = "start";
-            if(j == pos[i].size() - 1)
-                break;
-            if(j == pos[i].size() - 2)
-                second_word_pos = "end";
 
-            if(first_word_pos.empty())
-                first_word_pos = pos[i][j];
-            if(second_word_pos.empty())
-                second_word_pos = pos[i][j+1];
+            if (j == 0) {
+                first_word_pos = "start";
+            } else {
+                first_word_pos = pos[i][j - 1];
+            }
+            if (j == pos[i].size() ) {
+                second_word_pos = "end";
+            } else {
+                second_word_pos = pos[i][j];
+            }
 
             pair<string, string> key = make_pair(first_word_pos, second_word_pos);
-
             translation_matrix[key] += 1;
-            sum_of_first_word_pos[key.first] += 1;
+            sum_of_first_word_pos[first_word_pos] += 1;
         }
     }
+
 
     unordered_map<pair<string, string>, double, hash_pair> linear_trans_prob_matrix;
 
