@@ -8,9 +8,13 @@
 #include <string>
 #include <unordered_map>
 #include <algorithm>
+#include <chrono>
 #include <omp.h>
 
 using namespace std;
+
+const int NUM_OF_THREADS = 8;
+const int DATA_MULTIPLIER = 100000;
 
 struct hash_pair {
     template <class T1, class T2>
@@ -42,13 +46,16 @@ vector<string> viterbi(unordered_map<string, Word_emission> emission_matrix,
 
 int main()
 {
-    omp_set_num_threads(8);
+    omp_set_num_threads(NUM_OF_THREADS);
 
     vector<vector<string>> sentences, pos_tags;
 
     read_data_files(sentences, pos_tags);
 
+    auto start = chrono::high_resolution_clock::now();
     auto emission_matrix = build_emission_matrix(sentences, pos_tags);
+    auto end = chrono::high_resolution_clock::now();
+    cout << "Time difference for emission = " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms" << std::endl;
 
     auto linear_trans_prob_matrix = build_transition_probability_matrix(pos_tags);
     
@@ -84,7 +91,8 @@ void read_data_files(vector<vector<string>> &sentences, vector<vector<string>> &
         if (!line.empty()) {
             istringstream iss(line);
             vector<string> words((istream_iterator<string>(iss)), istream_iterator<string>());
-            sentences.push_back(words);
+            for (int i = 0; i < DATA_MULTIPLIER; i++) 
+                sentences.push_back(words);
         }
     }
     while (getline(posdata, line)) {
@@ -95,7 +103,8 @@ void read_data_files(vector<vector<string>> &sentences, vector<vector<string>> &
             while (getline(ss, word_pos, ',')) {
                 words_pos.push_back(word_pos);
             }
-            pos.push_back(words_pos);
+            for (int i = 0; i < DATA_MULTIPLIER; i++) 
+                pos.push_back(words_pos);
         }
     }
     cout << "Number of sentences in input data: " << sentences.size() << endl;
@@ -103,10 +112,13 @@ void read_data_files(vector<vector<string>> &sentences, vector<vector<string>> &
 }
 
 unordered_map<string, Word_emission> build_emission_matrix(vector<vector<string>> sentences, vector<vector<string>> pos_tags) {
-    unordered_map<string, Word_emission> emission_matrix;
 
-    #pragma omp parallel for schedule(dynamic, 2)
+    unordered_map<string, Word_emission> matrixes[NUM_OF_THREADS];
+
+    #pragma omp parallel for schedule(dynamic, 10)
     for (int i = 0; i < sentences.size(); i++) {
+
+        const int thread_num = omp_get_thread_num();
 
         if (sentences[i].size() != pos_tags[i].size()) {
             // cerr << "Words and POS mismatch on line : " << i << endl;
@@ -118,10 +130,28 @@ unordered_map<string, Word_emission> build_emission_matrix(vector<vector<string>
             string word = sentences[i][j];
             string pos_tag = pos_tags[i][j];
 
-            #pragma omp critical
-            emission_matrix[word].total_count += 1;
-            #pragma omp critical
-            emission_matrix[word].post_tag_to_count[pos_tag] += 1;
+            matrixes[thread_num][word].total_count += 1;
+            matrixes[thread_num][word].post_tag_to_count[pos_tag] += 1;
+
+            // #pragma omp critical
+            // emission_matrix[word].total_count += 1;
+            // #pragma omp critical
+            // emission_matrix[word].post_tag_to_count[pos_tag] += 1;
+        }
+    }
+
+    unordered_map<string, Word_emission> emission_matrix;
+    for (int i = 0; i < NUM_OF_THREADS; i++) {
+        for (auto word_to_emission : matrixes[i]) {
+            string word = word_to_emission.first;
+            Word_emission emission = word_to_emission.second;
+
+            emission_matrix[word].total_count += emission.total_count;
+            for (auto tag_to_count : emission_matrix[word].post_tag_to_count) {
+                string pos_tag = tag_to_count.first;
+
+                emission_matrix[word].post_tag_to_count[pos_tag] += tag_to_count.second;
+            }
         }
     }
 
