@@ -15,6 +15,7 @@ using namespace std;
 
 const int NUM_OF_THREADS = 8;
 const int DATA_MULTIPLIER = 100000;
+const int WORK_COUNT_FOR_THREAD = 100;
 
 struct hash_pair {
     template <class T1, class T2>
@@ -55,9 +56,13 @@ int main()
     auto start = chrono::high_resolution_clock::now();
     auto emission_matrix = build_emission_matrix(sentences, pos_tags);
     auto end = chrono::high_resolution_clock::now();
-    cout << "Time difference for emission = " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms" << std::endl;
+    cout << "Time taken for Emission matrix = " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms" << std::endl;
 
+
+    start = chrono::high_resolution_clock::now();
     auto linear_trans_prob_matrix = build_transition_probability_matrix(pos_tags);
+    end = chrono::high_resolution_clock::now();
+    cout << "Time taken for Transition matrix = " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms" << std::endl;
     
     /*
      *  Execution of Viterbi
@@ -115,7 +120,7 @@ unordered_map<string, Word_emission> build_emission_matrix(vector<vector<string>
 
     unordered_map<string, Word_emission> matrixes[NUM_OF_THREADS];
 
-    #pragma omp parallel for schedule(dynamic, 10)
+    #pragma omp parallel for schedule(dynamic, WORK_COUNT_FOR_THREAD)
     for (int i = 0; i < sentences.size(); i++) {
 
         const int thread_num = omp_get_thread_num();
@@ -163,13 +168,16 @@ unordered_map<string, Word_emission> build_emission_matrix(vector<vector<string>
 
 unordered_map<pair<string, string>, double, hash_pair> build_transition_probability_matrix(vector<vector<string>> pos_tags) {
 
-    unordered_map<pair<string, string>, double, hash_pair> linear_trans_prob_matrix;
+    unordered_map<string, Word_emission> matrixes[NUM_OF_THREADS];
 
-    unordered_map<pair<string, string>, int, hash_pair> transition_to_count;
-    unordered_map<string, int> sum_of_first_word_pos_tag;
+    unordered_map<pair<string, string>, int, hash_pair> th_transition_to_count[NUM_OF_THREADS];
+    unordered_map<string, int> th_sum_of_first_word_pos_tag[NUM_OF_THREADS];
 
-    #pragma omp parallel for schedule(dynamic, 10)
+    #pragma omp parallel for schedule(dynamic, WORK_COUNT_FOR_THREAD)
     for (int i = 0; i < pos_tags.size(); i++) {
+
+        const int thread_num = omp_get_thread_num();
+
         for (int j = 0; j < pos_tags[i].size(); j++) {
 
             string first_word_pos = j == 0 ? "start" : pos_tags[i][j - 1];
@@ -177,12 +185,34 @@ unordered_map<pair<string, string>, double, hash_pair> build_transition_probabil
 
             pair<string, string> key = make_pair(first_word_pos, second_word_pos);
 
-            #pragma omp critical
-            transition_to_count[key] += 1;
-            #pragma omp critical
-            sum_of_first_word_pos_tag[first_word_pos] += 1;
+            th_transition_to_count[thread_num][key] += 1;
+            th_sum_of_first_word_pos_tag[thread_num][first_word_pos] += 1;
+
+            // #pragma omp critical
+            // transition_to_count[key] += 1;
+            // #pragma omp critical
+            // sum_of_first_word_pos_tag[first_word_pos] += 1;
         }
     }
+
+    unordered_map<string, int> sum_of_first_word_pos_tag;
+    for (int i = 0; i < NUM_OF_THREADS; i++) {
+        for (auto first_word_pos_tag_count : th_sum_of_first_word_pos_tag[i]) {
+            string word = first_word_pos_tag_count.first;
+            sum_of_first_word_pos_tag[word] += first_word_pos_tag_count.second;
+        }
+    }
+
+    unordered_map<pair<string, string>, int, hash_pair> transition_to_count;
+    for (int i = 0; i < NUM_OF_THREADS; i++) {
+        for (auto transition : th_transition_to_count[i]) {
+            pair<string, string> word_pair = transition.first;
+            transition_to_count[word_pair] += transition.second;
+        }
+    }
+
+
+    unordered_map<pair<string, string>, double, hash_pair> linear_trans_prob_matrix;
 
     for (auto key_value : transition_to_count) {
         pair<string, string> key = key_value.first;
